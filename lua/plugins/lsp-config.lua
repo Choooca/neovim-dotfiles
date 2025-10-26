@@ -20,6 +20,26 @@ return {
   {
     "neovim/nvim-lspconfig",
     config = function()
+
+      vim.diagnostic.config({
+        virtual_text = {
+          spacing = 4,
+          prefix = '●',
+          current_line = true
+        },
+        signs = {
+          text = {
+            [vim.diagnostic.severity.ERROR] = '✘',
+            [vim.diagnostic.severity.WARN]  = '▲',
+            [vim.diagnostic.severity.HINT]  = '⚑',
+            [vim.diagnostic.severity.INFO]  = '»',
+          },
+          update_in_insert = false,
+          underline = true,
+          severity_sort = true,
+        }
+      })
+
       vim.lsp.enable('lua_ls')
 
       local function switch_source_header(bufnr, client)
@@ -73,7 +93,7 @@ return {
 
       ---@type vim.lsp.Config
       return {
-        cmd = { 'clangd' },
+        cmd = { 'clangd'},
         filetypes = { 'c', 'cpp', 'objc', 'objcpp', 'cuda' },
         root_markers = {
           '.clangd',
