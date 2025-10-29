@@ -1,128 +1,148 @@
 return {
-  { --mason https://github.com/mason-org/mason.nvim
-    "mason-org/mason.nvim",
-    opts = {}
-  },
-  { --mason lsp config https://github.com/mason-org/mason-lspconfig.nvim
-    {
-      "mason-org/mason-lspconfig.nvim",
-      opts = {
-        ensure_installed = {
-          "clangd", "lua_ls"
-        }
-      },
-      dependencies = {
-        { "mason-org/mason.nvim", opts = {} },
-        "neovim/nvim-lspconfig",
-      },
-    },
-  },
-{
-    "neovim/nvim-lspconfig",
-    config = function()
+	{ --mason https://github.com/mason-org/mason.nvim
+		"mason-org/mason.nvim",
+		opts = {},
+	},
+	{ --mason lsp config https://github.com/mason-org/mason-lspconfig.nvim
+		{
+			"mason-org/mason-lspconfig.nvim",
+			opts = {
+				ensure_installed = {
+					"clangd",
+					"lua_ls",
+				},
+			},
+			dependencies = {
+				{ "mason-org/mason.nvim", opts = {} },
+				"neovim/nvim-lspconfig",
+			},
+		},
+	},
+	{
+		"neovim/nvim-lspconfig",
+		dependencies = {
+			"p00f/clangd_extensions.nvim",
+		},
+		config = function()
+			vim.diagnostic.config({
+				virtual_text = {
+					spacing = 4,
+					prefix = "●",
+					current_line = true,
+				},
+				signs = {
+					update_in_insert = false,
+					underline = true,
+					severity_sort = true,
+				},
+			})
 
-      vim.diagnostic.config({
-        virtual_text = {
-          spacing = 4,
-          prefix = '●',
-          current_line = true
-        },
-        signs = {
-          update_in_insert = false,
-          underline = true,
-          severity_sort = true,
-        }
-      })
+			local capabilities = require("cmp_nvim_lsp").default_capabilities()
 
-      vim.lsp.enable('lua_ls')
+			vim.lsp.config.lua_ls = {
+				capabilities = capabilities,
+			}
 
-      local function switch_source_header(bufnr, client)
-        local method_name = 'textDocument/switchSourceHeader'
-        ---@diagnostic disable-next-line:param-type-mismatch
-        if not client or not client:supports_method(method_name) then
-          return vim.notify(('method %s is not supported by any servers active on the current buffer'):format(method_name))
-        end
-        local params = vim.lsp.util.make_text_document_params(bufnr)
-        ---@diagnostic disable-next-line:param-type-mismatch
-        client:request(method_name, params, function(err, result)
-          if err then
-            error(tostring(err))
-          end
-          if not result then
-            vim.notify('corresponding file cannot be determined')
-            return
-          end
-          vim.cmd.edit(vim.uri_to_fname(result))
-        end, bufnr)
-      end
+			local function switch_source_header(bufnr, client)
+				local method_name = "textDocument/switchSourceHeader"
+				---@diagnostic disable-next-line:param-type-mismatch
+				if not client or not client:supports_method(method_name) then
+					return vim.notify(
+						("method %s is not supported by any servers active on the current buffer"):format(method_name)
+					)
+				end
+				local params = vim.lsp.util.make_text_document_params(bufnr)
+				---@diagnostic disable-next-line:param-type-mismatch
+				client:request(method_name, params, function(err, result)
+					if err then
+						error(tostring(err))
+					end
+					if not result then
+						vim.notify("corresponding file cannot be determined")
+						return
+					end
+					vim.cmd.edit(vim.uri_to_fname(result))
+				end, bufnr)
+			end
 
-      local function symbol_info(bufnr, client)
-        local method_name = 'textDocument/symbolInfo'
-        ---@diagnostic disable-next-line:param-type-mismatch
-        if not client or not client:supports_method(method_name) then
-          return vim.notify('Clangd client not found', vim.log.levels.ERROR)
-        end
-        local win = vim.api.nvim_get_current_win()
-        local params = vim.lsp.util.make_position_params(win, client.offset_encoding)
-        ---@diagnostic disable-next-line:param-type-mismatch
-        client:request(method_name, params, function(err, res)
-          if err or #res == 0 then
-            -- Clangd always returns an error, there is no reason to parse it
-            return
-          end
-          local container = string.format('container: %s', res[1].containerName) ---@type string
-          local name = string.format('name: %s', res[1].name) ---@type string
-          vim.lsp.util.open_floating_preview({ name, container }, '', {
-            height = 2,
-            width = math.max(string.len(name), string.len(container)),
-            focusable = false,
-            focus = false,
-            title = 'Symbol Info',
-          })
-        end, bufnr)
-      end
+			local function symbol_info(bufnr, client)
+				local method_name = "textDocument/symbolInfo"
+				---@diagnostic disable-next-line:param-type-mismatch
+				if not client or not client:supports_method(method_name) then
+					return vim.notify("Clangd client not found", vim.log.levels.ERROR)
+				end
+				local win = vim.api.nvim_get_current_win()
+				local params = vim.lsp.util.make_position_params(win, client.offset_encoding)
+				---@diagnostic disable-next-line:param-type-mismatch
+				client:request(method_name, params, function(err, res)
+					if err or #res == 0 then
+						-- Clangd always returns an error, there is no reason to parse it
+						return
+					end
+					local container = string.format("container: %s", res[1].containerName) ---@type string
+					local name = string.format("name: %s", res[1].name) ---@type string
+					vim.lsp.util.open_floating_preview({ name, container }, "", {
+						height = 2,
+						width = math.max(string.len(name), string.len(container)),
+						focusable = false,
+						focus = false,
+						title = "Symbol Info",
+					})
+				end, bufnr)
+			end
 
-      ---@class ClangdInitializeResult: lsp.InitializeResult
-      ---@field offsetEncoding? string
+			---@class ClangdInitializeResult: lsp.InitializeResult
+			---@field offsetEncoding? string
 
-      ---@type vim.lsp.Config
-      return {
-        cmd = { 'clangd'},
-        filetypes = { 'c', 'cpp', 'objc', 'objcpp', 'cuda' },
-        root_markers = {
-          '.clangd',
-          '.clang-tidy',
-          '.clang-format',
-          'compile_commands.json',
-          'compile_flags.txt',
-          'configure.ac', -- AutoTools
-          '.git',
-        },
-        capabilities = {
-          textDocument = {
-            completion = {
-              editsNearCursor = true,
-            },
-          },
-          offsetEncoding = { 'utf-8', 'utf-16' },
-        },
-        ---@param init_result ClangdInitializeResult
-        on_init = function(client, init_result)
-          if init_result.offsetEncoding then
-            client.offset_encoding = init_result.offsetEncoding
-          end
-        end,
-        on_attach = function(client, bufnr)
-          vim.api.nvim_buf_create_user_command(bufnr, 'LspClangdSwitchSourceHeader', function()
-            switch_source_header(bufnr, client)
-          end, { desc = 'Switch between source/header' })
+			---@type vim.lsp.Config
+			vim.lsp.config.clangd = {
+				cmd = { "clangd" },
+				filetypes = { "c", "cpp", "objc", "objcpp", "cuda" },
+				root_markers = {
+					".clangd",
+					".clang-tidy",
+					".clang-format",
+					"compile_commands.json",
+					"compile_flags.txt",
+					"configure.ac", -- AutoTools
+					".git",
+				},
+				capabilities = vim.tbl_deep_extend("force", capabilities, {
+					textDocument = {
+						completion = {
+							editsNearCursor = true,
+						},
+					},
+					offsetEncoding = { "utf-8", "utf-16" },
+				}),
+				init_options = {
+					usePlaceholders = true,
+					completeUnimported = true,
+					clangdFileStatus = true,
+				},
+				---@param init_result ClangdInitializeResult
+				on_init = function(client, init_result)
+					if init_result.offsetEncoding then
+						client.offset_encoding = init_result.offsetEncoding
+					end
+				end,
+				on_attach = function(client, bufnr)
+					vim.api.nvim_buf_create_user_command(bufnr, "LspClangdSwitchSourceHeader", function()
+						switch_source_header(bufnr, client)
+					end, { desc = "Switch between source/header" })
 
-          vim.api.nvim_buf_create_user_command(bufnr, 'LspClangdShowSymbolInfo', function()
-            symbol_info(bufnr, client)
-          end, { desc = 'Show symbol info' })
-        end,
-      }
+					vim.api.nvim_buf_create_user_command(bufnr, "LspClangdShowSymbolInfo", function()
+						symbol_info(bufnr, client)
+					end, { desc = "Show symbol info" })
 
-    end
-  }
+					vim.keymap.set("n", "<leader>ch", "<cmd>LspClangdSwitchSourceHeader<cr>", {
+						buffer = bufnr,
+						desc = "Switch Source/Header (C/C++)",
+					})
+				end,
+			}
+
+			vim.lsp.enable({ "lua_ls", "clangd" })
+		end,
+	},
 }
