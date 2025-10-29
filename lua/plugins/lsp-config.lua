@@ -1,7 +1,9 @@
 return {
 	{ --mason https://github.com/mason-org/mason.nvim
 		"mason-org/mason.nvim",
-		opts = {},
+		opts = {
+			ensure_installed = { "codelldb" },
+		},
 	},
 	{ --mason lsp config https://github.com/mason-org/mason-lspconfig.nvim
 		{
