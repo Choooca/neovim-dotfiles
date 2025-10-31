@@ -39,7 +39,7 @@ return {
       })
 
       local capabilities = require("cmp_nvim_lsp").default_capabilities()
-
+      capabilities.textDocument.completion.completionItem.snippetSupport = false
       vim.lsp.config.lua_ls = {
         capabilities = capabilities,
       }
@@ -92,10 +92,6 @@ return {
         end, bufnr)
       end
 
-      ---@class ClangdInitializeResult: lsp.InitializeResult
-      ---@field offsetEncoding? string
-
-      ---@type vim.lsp.Config
       vim.lsp.config.clangd = {
         cmd = { "clangd" },
         filetypes = { "c", "cpp", "objc", "objcpp", "cuda" },
@@ -117,11 +113,11 @@ return {
           offsetEncoding = { "utf-8", "utf-16" },
         }),
         init_options = {
-          usePlaceholders = true,
+          usePlaceholders = false,
           completeUnimported = true,
           clangdFileStatus = true,
         },
-        ---@param init_result ClangdInitializeResult
+
         on_init = function(client, init_result)
           if init_result.offsetEncoding then
             client.offset_encoding = init_result.offsetEncoding
