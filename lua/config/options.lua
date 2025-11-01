@@ -3,7 +3,7 @@ vim.g.mapleader = " "
 vim.opt.pumheight = 10
 vim.opt.pumwidth = 20
 
-vim.opt.wrap = false
+vim.opt.wrap = true
 vim.opt.showtabline = 2
 
 vim.cmd("set expandtab")
